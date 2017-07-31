@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="css/materialize.min.css"  media="screen,projection"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+	<title>Yopamusic Panel</title>
+	<style>
+		#formulaire {
+			width: 70%;
+			margin: auto;
+			margin-top: 35vh;
+		  transform: translateY(-50%);
+      margin-bottom: 0px;
+		}
+
+    #element {
+      background-color: red;
+      width: 100%;
+    }
+
+    #queue {
+      width: 70%;
+      margin: auto;
+      box-shadow: 5px 5px 100px black;
+    }
+
+	</style>
+</head>
+<body>
+	<nav>
+    <div class="nav-wrapper">
+      <a href="#" class="brand-logo center">Yopamusic</a>
+    </div>
+  </nav>
+  <div id="formulaire">
+		<div class="input-field col s6">
+	    <input id="lien_youtube" name="lien_youtube" type="text">
+      <label for="lien_youtube">Lien Youtube</label>
+    </div>
+        <button class="btn waves-effect waves-light" id="play_button" type="button">lancer
+	        <i class="material-icons right">send</i>
+		    </button>
+        <button class="btn waves-effect waves-light stop" id="stop_button" type="button">stop</button><br/><br />
+        <span id="erreur" style="color: red"></span>
+    </div>
+
+    <div id="queue"></div>
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script type="text/javascript" src="js/materialize.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  var socket = io.connect('http://localhost:4242');
+  var play_button = document.getElementById('play_button'),
+      stop_button = document.getElementById('stop_button');
+
+  play_button.addEventListener('click', function() {
+    var value = document.getElementById('lien_youtube').value;
+    socket.emit('youtube_link', value);
+  });
+
+  stop_button.addEventListener('click', function() {
+    socket.emit('stop_button', 'salut');
+  });
+
+  socket.on('play', function(queue) {
+    var queueLength = queue.length;
+    var queueDiv = document.getElementById('queue');
+
+    for(var i = 0; i < queueLength; i++) {
+      var playlistUrl = document.createTextNode(queue[i]),
+          playlistElement = document.createElement('div');
+
+      playlistElement.className = 'playlistElement';
+      playlistElement.appendChild(playlistUrl);
+      queueDiv.appendChild(playlistElement);
+    }
+  });
+
+  socket.on('stop', function() {
+    var queueDiv = document.getElementById('queue');
+    while (queueDiv.firstChild) {
+      queueDiv.removeChild(queueDiv.firstChild);
+    }
+  });
+
+  socket.on('erreur', function(erreur) {
+    document.getElementById('erreur').innerHTML = erreur;
+  });
+</script>
+</body>
+</html>
