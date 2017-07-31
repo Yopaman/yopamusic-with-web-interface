@@ -67,6 +67,7 @@
   socket.on('play', function(queue) {
     var queueLength = queue.length;
     var queueDiv = document.getElementById('queue');
+    console.log(queueLength);
 
     for(var i = 0; i < queueLength; i++) {
       var playlistUrl = document.createTextNode(queue[i]),

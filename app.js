@@ -39,6 +39,7 @@ io.on('connection', function(socket) {
 
   socket.on('stop_button', function(data) {
     queue = [];
+    client.voiceConnections.first().disconnect();
     socket.emit('stop')
   });
 
@@ -51,11 +52,15 @@ io.on('connection', function(socket) {
       //Ajouter à la file d'attente
       if(youtube_link.search('playlist') < 0) {
         queue.push(youtube_link);
-        var playlistFirst = false;
+        console.log(queue.length);
+        if (queue.length = 1) {
+          var playMusic = true;
+        }
+        socket.emit('play', queue);
         addToQueue.emit('finished');
       } else {
-        if (queue = []) {
-          var playlistFirst = true
+        if (queue == []) {
+          playMusic = true
         }
         let playlistIdPosition = youtube_link.search('playlist');
         playlistIdPosition += 14;
@@ -64,6 +69,7 @@ io.on('connection', function(socket) {
           for(var i = 0; i < playlistItem.length; i++) {
             queue.push('https://www.youtube.com/watch?v=' + playlistItem[i].resourceId.videoId);
           }
+          socket.emit('play', queue);
           addToQueue.emit('finished');
         });
       }
@@ -73,23 +79,24 @@ io.on('connection', function(socket) {
 
     //Lancer la musique sur discord
     addToQueue.on('finished', function() {
-      socket.emit('play', queue);
-      if (queue.length == 1 || playlistFirst == true) {
+      if (playMusic == true) {
         client.guilds.get('136182197051719680').members.get('136181701733777409').voiceChannel.join().then(function(connection) {
           let stream = ytdl(queue[0]);
           connection.playStream(stream);
+
           stream.on('error', function() {
+            socket.emit('erreur', 'Erreur lors de la lecture de la vidéo')
             connection.disconnect();
           });
 
           stream.on('end', function() {
             if (queue == []) {
               connection.disconnect();
-              socket.emit('play');
+              socket.emit('stop');
             } else {
-              console.log('test');
               queue.shift();
-              socket.emit('play', queue)
+              console.log('test');
+              socket.emit('play', queue);
               stream = ytdl(queue[0]);
               connection.playStream(stream)
             }
