@@ -8,9 +8,10 @@ const app = express();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 const EventEmitter = require('events').EventEmitter;
-var addToQueue = new EventEmitter();
+const addToQueue = new EventEmitter();
 var queue = [];
 var queueMeta = [];
+var playlistPlayFirst = false;
 //express
 
 
@@ -44,7 +45,6 @@ io.on('connection', function(socket) {
 
       //Ajouter à la file d'attente
       if(youtube_link.search('playlist') < 0) {
-        console.log('video normale');
         queue.push(youtube_link);
         var videoId = youtube_link.split('v=')[1];
         var ampersandPosition = videoId.indexOf('&');
@@ -53,12 +53,14 @@ io.on('connection', function(socket) {
         }
         fetchVideoInfo(videoId)
         .then(function(videoInfos) {
-          queueMeta.push(videoInfos);
+          queueMeta.push({ title: videoInfos.title });
           socket.emit('play', queueMeta);
+          addToQueue.emit('finished');
         });
-        addToQueue.emit('finished');
       } else {
-        console.log('playlist');
+        if (queue.length === 0) {
+          playlistPlayFirst = true;
+        }
         let playlistIdPosition = youtube_link.search('playlist');
         playlistIdPosition += 14;
         var playlistId = youtube_link.substr(playlistIdPosition, youtube_link.length - 1);
@@ -77,8 +79,9 @@ io.on('connection', function(socket) {
 
     //Lancer la musique sur discord
     addToQueue.on('finished', function() {
-      if (queue.length === 1) {
-        console.log('première vidéo')
+      if (queue.length === 1 || playlistPlayFirst === true) {
+        console.log('première vidéo');
+        playlistPlayFirst = false;
       }
     });
   });
