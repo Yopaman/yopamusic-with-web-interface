@@ -14,15 +14,31 @@
       margin-bottom: 0px;
 		}
 
-    #element {
-      background-color: red;
-      width: 100%;
-    }
-
     #queue {
       width: 70%;
+      height: 370px;
       margin: auto;
-      box-shadow: 5px 5px 100px black;
+      overflow: auto;
+    }
+
+    .playlistElement {
+      display: flex;
+      height: 50px;
+      border-bottom: 1px solid gray;
+      padding: 5px;
+    }
+
+    .playlistText {
+      align-self: center;
+    }
+
+    .removeFromPlaylist {
+      height: 100%;
+      margin-left: auto;
+    }
+
+    .numero0 {
+      background-color: #a7ff6d;
     }
 
 	</style>
@@ -64,25 +80,32 @@
     socket.emit('stop_button', 'salut');
   });
 
-  socket.on('play', function(queue) {
-    var queueLength = queue.length;
+  socket.on('play', function(queueMeta) {
+    var queueMetaLength = queueMeta.length;
     var queueDiv = document.getElementById('queue');
-    console.log(queueLength);
 
-    for(var i = 0; i < queueLength; i++) {
-      var playlistUrl = document.createTextNode(queue[i]),
-          playlistElement = document.createElement('div');
-
-      playlistElement.className = 'playlistElement';
-      playlistElement.appendChild(playlistUrl);
-      queueDiv.appendChild(playlistElement);
-    }
-  });
-
-  socket.on('stop', function() {
-    var queueDiv = document.getElementById('queue');
     while (queueDiv.firstChild) {
       queueDiv.removeChild(queueDiv.firstChild);
+    }
+
+    for(var i = 0; i < queueMetaLength; i++) {
+      var playlistSpan = document.createElement('span');
+          playlistUrl = document.createTextNode(queueMeta[i].title),
+          playlistElement = document.createElement('div'),
+          deleteButton = document.createElement('button'),
+          deleteButtonText = document.createTextNode('SUPPRIMER');
+
+      deleteButton.className = 'btn waves-effect waves-light red removeFromPlaylist';
+      playlistSpan.className = 'playlistText';
+      playlistElement.className = 'playlistElement numero' + i;
+      playlistSpan.appendChild(playlistUrl);
+      playlistElement.appendChild(playlistSpan);
+      if (i != 0) {
+        deleteButton.appendChild(deleteButtonText);
+        playlistElement.appendChild(deleteButton);
+      }
+      queueDiv.appendChild(playlistElement);
+
     }
   });
 

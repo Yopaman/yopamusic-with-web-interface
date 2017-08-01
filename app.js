@@ -1,14 +1,16 @@
 ﻿const Discord = require("discord.js");
 const ytdl = require('ytdl-core');
 const ypi = require('youtube-playlist-info');
+const fetchVideoInfo = require('youtube-info');
 const config = require('./config')
-var express = require('express');
-var app = express();
-var server = require('http').createServer(app);
-var io = require('socket.io')(server);
-var EventEmitter = require('events').EventEmitter;
+const express = require('express');
+const app = express();
+const server = require('http').createServer(app);
+const io = require('socket.io')(server);
+const EventEmitter = require('events').EventEmitter;
 var addToQueue = new EventEmitter();
 var queue = [];
+var queueMeta = [];
 //express
 
 
@@ -34,16 +36,7 @@ io.on('connection', function(socket) {
     console.log('Un client s\'est déconnecté');
   });
 
-  socket.emit('stop');
-  socket.emit('play', queue);
-
-  socket.on('stop_button', function(data) {
-    queue = [];
-    client.voiceConnections.first().disconnect();
-    socket.emit('stop')
-  });
-
-
+  socket.emit('play', queueMeta);
 
   //Récupérer le lien youtube
   socket.on('youtube_link', function(youtube_link) {
@@ -51,25 +44,30 @@ io.on('connection', function(socket) {
 
       //Ajouter à la file d'attente
       if(youtube_link.search('playlist') < 0) {
+        console.log('video normale');
         queue.push(youtube_link);
-        console.log(queue.length);
-        if (queue.length = 1) {
-          var playMusic = true;
+        var videoId = youtube_link.split('v=')[1];
+        var ampersandPosition = videoId.indexOf('&');
+        if(ampersandPosition != -1) {
+          videoId = videoId.substring(0, ampersandPosition);
         }
-        socket.emit('play', queue);
+        fetchVideoInfo(videoId)
+        .then(function(videoInfos) {
+          queueMeta.push(videoInfos);
+          socket.emit('play', queueMeta);
+        });
         addToQueue.emit('finished');
       } else {
-        if (queue == []) {
-          playMusic = true
-        }
+        console.log('playlist');
         let playlistIdPosition = youtube_link.search('playlist');
         playlistIdPosition += 14;
         var playlistId = youtube_link.substr(playlistIdPosition, youtube_link.length - 1);
         ypi.playlistInfo(config.youtube_key, playlistId, function(playlistItem) {
           for(var i = 0; i < playlistItem.length; i++) {
             queue.push('https://www.youtube.com/watch?v=' + playlistItem[i].resourceId.videoId);
+            queueMeta.push({ title: playlistItem[i].title});
           }
-          socket.emit('play', queue);
+          socket.emit('play', queueMeta);
           addToQueue.emit('finished');
         });
       }
@@ -79,36 +77,8 @@ io.on('connection', function(socket) {
 
     //Lancer la musique sur discord
     addToQueue.on('finished', function() {
-      if (playMusic == true) {
-        client.guilds.get('136182197051719680').members.get('136181701733777409').voiceChannel.join().then(function(connection) {
-          let stream = ytdl(queue[0]);
-          connection.playStream(stream);
-
-          stream.on('error', function() {
-            socket.emit('erreur', 'Erreur lors de la lecture de la vidéo')
-            connection.disconnect();
-          });
-
-          stream.on('end', function() {
-            if (queue == []) {
-              connection.disconnect();
-              socket.emit('stop');
-            } else {
-              queue.shift();
-              console.log('test');
-              socket.emit('play', queue);
-              stream = ytdl(queue[0]);
-              connection.playStream(stream)
-            }
-          });
-
-          socket.on('stop_button', function(data) {
-            socket.emit('stop')
-            queue = [];
-            stream.destroy();
-            connection.disconnect();
-          });
-        });
+      if (queue.length === 1) {
+        console.log('première vidéo')
       }
     });
   });
