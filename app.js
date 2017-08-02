@@ -2,6 +2,7 @@
 const youtubeStream = require('youtube-audio-stream');
 const ypi = require('youtube-playlist-info');
 const fetchVideoInfo = require('youtube-info');
+const bodyParser = require('body-parser')
 const config = require('./config')
 const express = require('express');
 const app = express();
@@ -26,9 +27,21 @@ client.on('ready', function() {
 
 // Chargement du fichier index.html affiché au client
 app.use(express.static(__dirname + '/public'));
+app.use( bodyParser.json() );
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
 
 app.get('/', function(req, res,next) {
-    res.sendFile(__dirname + '/index.html');
+    res.sendFile(__dirname + '/password.html');
+});
+
+app.post('/', function(req, res) {
+    if (req.body.password === config.password) {
+      res.sendFile(__dirname + '/index.html');
+    } else {
+      res.sendFile(__dirname + '/password.html');
+    }
 });
 
 io.on('connection', function(socket) {
