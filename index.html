@@ -37,7 +37,7 @@
       margin-left: auto;
     }
 
-    .numero0 {
+    #numero0 {
       background-color: #a7ff6d;
     }
 
@@ -97,12 +97,18 @@
 
       deleteButton.className = 'btn waves-effect waves-light red removeFromPlaylist';
       playlistSpan.className = 'playlistText';
-      playlistElement.className = 'playlistElement numero' + i;
+      playlistElement.className = 'playlistElement';
+      playlistElement.id = 'numero' + i;
       playlistSpan.appendChild(playlistUrl);
       playlistElement.appendChild(playlistSpan);
       if (i != 0) {
         deleteButton.appendChild(deleteButtonText);
         playlistElement.appendChild(deleteButton);
+        deleteButton.addEventListener('click', function(e) {
+          var elementASuppr = e.target.parentNode;
+          var numeroElement = elementASuppr.id.substring(6);
+          socket.emit('remove_button', {elementToDelete: numeroElement});
+        });
       }
       queueDiv.appendChild(playlistElement);
 

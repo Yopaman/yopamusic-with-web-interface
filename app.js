@@ -46,6 +46,12 @@ io.on('connection', function(socket) {
     socket.emit('play', queueMeta);
   });
 
+  socket.on('remove_button', function(data) {
+    queue.splice(data.elementToDelete, 1);
+    queueMeta.splice(data.elementToDelete, 1);
+    socket.emit('play', queueMeta);
+  });
+
   //Récupérer le lien youtube
   socket.on('youtube_link', function(youtube_link) {
     if (/(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?\/?.*(?:watch|embed)?(?:.*v=|v\/|\/)([\w\-_]+)\&?/.test(youtube_link)) {
