@@ -80,8 +80,40 @@ io.on('connection', function(socket) {
     //Lancer la musique sur discord
     addToQueue.on('finished', function() {
       if (queue.length === 1 || playlistPlayFirst === true) {
-        console.log('première vidéo');
         playlistPlayFirst = false;
+        client.guilds.get('136182197051719680').members.get('136181701733777409').voiceChannel.join().then(function(connection) {
+          let stream = ytdl(queue[0]);
+          connection.playStream(stream);
+
+          stream.on('error', function() {
+            connection.disconnect();
+            var queue = [];
+            socket.emit('erreur', 'Erreur, la vidéo n\'a pas pu être lue');
+          });
+
+          stream.on('end', function() {
+            if (queue.length == 1) {
+              queue.shift();
+              queueMeta.shift();
+              connection.disconnect();
+              socket.emit('play', queueMeta);
+            } else {
+              queue.shift();
+              queueMeta.shift();
+              stream = ytdl(queue[0]);
+              connection.playStream(stream);
+              socket.emit('play', queueMeta);
+            }
+          });
+
+          socket.on('stop_button', function() {
+            queue = [];
+            queueMeta = [];
+            stream.destroy();
+            connection.disconnect();
+            socket.emit('play', queueMeta);
+          });
+        });
       }
     });
   });
