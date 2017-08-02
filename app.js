@@ -1,5 +1,5 @@
 ﻿const Discord = require("discord.js");
-const ytdl = require('ytdl-core');
+const youtubeStream = require('youtube-audio-stream');
 const ypi = require('youtube-playlist-info');
 const fetchVideoInfo = require('youtube-info');
 const config = require('./config')
@@ -38,6 +38,13 @@ io.on('connection', function(socket) {
   });
 
   socket.emit('play', queueMeta);
+
+  socket.on('stop_button', function() {
+    queue = [];
+    queueMeta = [];
+    client.voiceConnections.first().disconnect();
+    socket.emit('play', queueMeta);
+  });
 
   //Récupérer le lien youtube
   socket.on('youtube_link', function(youtube_link) {
@@ -82,14 +89,14 @@ io.on('connection', function(socket) {
       if (queue.length === 1 || playlistPlayFirst === true) {
         playlistPlayFirst = false;
         client.guilds.get('136182197051719680').members.get('136181701733777409').voiceChannel.join().then(function(connection) {
-          let stream = ytdl(queue[0]);
+          let stream = youtubeStream(queue[0]);
           connection.playStream(stream);
 
-          stream.on('error', function() {
+          /*stream.on('error', function() {
             connection.disconnect();
             var queue = [];
             socket.emit('erreur', 'Erreur, la vidéo n\'a pas pu être lue');
-          });
+          });*/
 
           stream.on('end', function() {
             if (queue.length == 1) {
@@ -100,18 +107,19 @@ io.on('connection', function(socket) {
             } else {
               queue.shift();
               queueMeta.shift();
-              stream = ytdl(queue[0]);
+              stream = youtubeStream(queue[0]);
               connection.playStream(stream);
               socket.emit('play', queueMeta);
             }
           });
 
           socket.on('stop_button', function() {
-            queue = [];
-            queueMeta = [];
-            stream.destroy();
-            connection.disconnect();
-            socket.emit('play', queueMeta);
+            try {
+              stream.end();
+            } catch(exception) {
+              console.log(exception);
+            }
+
           });
         });
       }
