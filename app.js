@@ -66,13 +66,14 @@ io.on('connection', function(socket) {
   });
 
   //Récupérer le lien youtube
-  socket.on('youtube_link', function(youtube_link) {
-    if (/(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?\/?.*(?:watch|embed)?(?:.*v=|v\/|\/)([\w\-_]+)\&?/.test(youtube_link)) {
+  socket.on('youtube_link', function(data) {
+    console.log(data.userId);
+    if (/(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?\/?.*(?:watch|embed)?(?:.*v=|v\/|\/)([\w\-_]+)\&?/.test(data.youtube_link)) {
 
       //Ajouter à la file d'attente
-      if(youtube_link.search('playlist') < 0) {
-        queue.push(youtube_link);
-        var videoId = youtube_link.split('v=')[1];
+      if(data.youtube_link.search('playlist') < 0) {
+        queue.push(data.youtube_link);
+        var videoId = data.youtube_link.split('v=')[1];
         var ampersandPosition = videoId.indexOf('&');
         if(ampersandPosition != -1) {
           videoId = videoId.substring(0, ampersandPosition);
@@ -87,9 +88,9 @@ io.on('connection', function(socket) {
         if (queue.length === 0) {
           playlistPlayFirst = true;
         }
-        let playlistIdPosition = youtube_link.search('playlist');
+        let playlistIdPosition = data.youtube_link.search('playlist');
         playlistIdPosition += 14;
-        var playlistId = youtube_link.substr(playlistIdPosition, youtube_link.length - 1);
+        var playlistId = data.youtube_link.substr(playlistIdPosition, data.youtube_link.length - 1);
         ypi.playlistInfo(config.youtube_key, playlistId, function(playlistItem) {
           for(var i = 0; i < playlistItem.length; i++) {
             queue.push('https://www.youtube.com/watch?v=' + playlistItem[i].resourceId.videoId);
@@ -107,40 +108,41 @@ io.on('connection', function(socket) {
     addToQueue.on('finished', function() {
       if (queue.length === 1 || playlistPlayFirst === true) {
         playlistPlayFirst = false;
-        client.guilds.get('136182197051719680').members.get('136181701733777409').voiceChannel.join().then(function(connection) {
-          let stream = youtubeStream(queue[0]);
-          connection.playStream(stream);
+        try {
+          client.guilds.get('136182197051719680').members.get(data.userId).voiceChannel.join().then(function(connection) {
+            let stream = youtubeStream(queue[0]);
+            connection.playStream(stream);
 
-          /*stream.on('error', function() {
-            connection.disconnect();
-            var queue = [];
-            socket.emit('erreur', 'Erreur, la vidéo n\'a pas pu être lue');
-          });*/
+            stream.on('end', function() {
+              if (queue.length == 1) {
+                queue.shift();
+                queueMeta.shift();
+                connection.disconnect();
+                socket.emit('play', queueMeta);
+              } else {
+                queue.shift();
+                queueMeta.shift();
+                stream = youtubeStream(queue[0]);
+                connection.playStream(stream);
+                socket.emit('play', queueMeta);
+              }
+            });
 
-          stream.on('end', function() {
-            if (queue.length == 1) {
-              queue.shift();
-              queueMeta.shift();
-              connection.disconnect();
-              socket.emit('play', queueMeta);
-            } else {
-              queue.shift();
-              queueMeta.shift();
-              stream = youtubeStream(queue[0]);
-              connection.playStream(stream);
-              socket.emit('play', queueMeta);
-            }
+            socket.on('stop_button', function() {
+              try {
+                stream.end();
+              } catch(exception) {
+                console.log(exception);
+              }
+
+            });
           });
-
-          socket.on('stop_button', function() {
-            try {
-              stream.end();
-            } catch(exception) {
-              console.log(exception);
-            }
-
-          });
-        });
+      } catch (e) {
+        socket.emit('erreur', 'Erreur, la personne n\'est pas connectée');
+        queue = [];
+        queueMeta = [];
+        socket.emit('play', queueMeta);
+      }
       }
     });
   });

@@ -8,10 +8,9 @@
 	<style>
 		#formulaire {
 			width: 70%;
-			margin: auto;
-			margin-top: 35vh;
-		  transform: translateY(-50%);
-      margin-bottom: 0px;
+      margin-top: 30vh; /* poussÃ© de la moitiÃ© de hauteur de viewport */
+      transform: translateY(-50%); /* tirÃ© de la moitiÃ© de sa propre hauteur */
+      margin-left: auto; margin-right: auto;
 		}
 
     #queue {
@@ -50,15 +49,22 @@
     </div>
   </nav>
   <div id="formulaire">
+    <select id="test" class="browser-default">
+      <option value="136181701733777409">Yopaman</option>
+      <option value="139338063477342208">GilloDaby</option>
+      <option value="138988304178741248">Spayce</option>
+    </select><br />
+
 		<div class="input-field col s6">
 	    <input id="lien_youtube" name="lien_youtube" type="text">
       <label for="lien_youtube">Lien Youtube</label>
     </div>
-        <button class="btn waves-effect waves-light" id="play_button" type="button">lancer
-	        <i class="material-icons right">send</i>
-		    </button>
-        <button class="btn waves-effect waves-light stop" id="stop_button" type="button">stop</button><br/><br />
-        <span id="erreur" style="color: red"></span>
+
+    <button class="btn waves-effect waves-light" id="play_button" type="button">lancer
+	     <i class="material-icons right">send</i>
+	  </button>
+    <button class="btn waves-effect waves-light stop" id="stop_button" type="button">stop</button><br/><br />
+    <span id="erreur" style="color: red"></span>
     </div>
 
     <div id="queue"></div>
@@ -69,11 +75,20 @@
 <script>
   var socket = io.connect('http://localhost:4242');
   var play_button = document.getElementById('play_button'),
-      stop_button = document.getElementById('stop_button');
+      stop_button = document.getElementById('stop_button'),
+      select = document.getElementById('test'),
+      userId = select.options[select.selectedIndex].value;
+
+
+  select.addEventListener('change', function() {
+    userId = select.options[select.selectedIndex].value;
+    console.log(userId)
+  });
+
 
   play_button.addEventListener('click', function() {
     var value = document.getElementById('lien_youtube').value;
-    socket.emit('youtube_link', value);
+    socket.emit('youtube_link', {youtube_link: value, userId: userId});
   });
 
   stop_button.addEventListener('click', function() {
