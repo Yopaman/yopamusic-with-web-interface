@@ -49,12 +49,6 @@
     </div>
   </nav>
   <div id="formulaire">
-    <select id="test" class="browser-default">
-      <option value="136181701733777409">Yopaman</option>
-      <option value="139338063477342208">GilloDaby</option>
-      <option value="138988304178741248">Spayce</option>
-    </select><br />
-
 		<div class="input-field col s6">
 	    <input id="lien_youtube" name="lien_youtube" type="text">
       <label for="lien_youtube">Lien Youtube</label>
@@ -75,20 +69,12 @@
 <script>
   var socket = io.connect('http://localhost:4242');
   var play_button = document.getElementById('play_button'),
-      stop_button = document.getElementById('stop_button'),
-      select = document.getElementById('test'),
-      userId = select.options[select.selectedIndex].value;
-
-
-  select.addEventListener('change', function() {
-    userId = select.options[select.selectedIndex].value;
-    console.log(userId)
-  });
+      stop_button = document.getElementById('stop_button');
 
 
   play_button.addEventListener('click', function() {
     var value = document.getElementById('lien_youtube').value;
-    socket.emit('youtube_link', {youtube_link: value, userId: userId});
+    socket.emit('youtube_link', value);
   });
 
   stop_button.addEventListener('click', function() {

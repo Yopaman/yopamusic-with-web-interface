@@ -33,15 +33,7 @@ app.use(bodyParser.urlencoded({
 }));
 
 app.get('/', function(req, res,next) {
-    res.sendFile(__dirname + '/password.html');
-});
-
-app.post('/', function(req, res) {
-    if (req.body.password === config.password) {
-      res.sendFile(__dirname + '/index.html');
-    } else {
-      res.sendFile(__dirname + '/password.html');
-    }
+    res.sendFile(__dirname + '/index.html');
 });
 
 io.on('connection', function(socket) {
@@ -66,14 +58,13 @@ io.on('connection', function(socket) {
   });
 
   //Récupérer le lien youtube
-  socket.on('youtube_link', function(data) {
-    console.log(data.userId);
-    if (/(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?\/?.*(?:watch|embed)?(?:.*v=|v\/|\/)([\w\-_]+)\&?/.test(data.youtube_link)) {
+  socket.on('youtube_link', function(youtube_link) {
+    if (/(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?\/?.*(?:watch|embed)?(?:.*v=|v\/|\/)([\w\-_]+)\&?/.test(youtube_link)) {
 
       //Ajouter à la file d'attente
-      if(data.youtube_link.search('playlist') < 0) {
-        queue.push(data.youtube_link);
-        var videoId = data.youtube_link.split('v=')[1];
+      if(youtube_link.search('playlist') < 0) {
+        queue.push(youtube_link);
+        var videoId = youtube_link.split('v=')[1];
         var ampersandPosition = videoId.indexOf('&');
         if(ampersandPosition != -1) {
           videoId = videoId.substring(0, ampersandPosition);
@@ -88,9 +79,9 @@ io.on('connection', function(socket) {
         if (queue.length === 0) {
           playlistPlayFirst = true;
         }
-        let playlistIdPosition = data.youtube_link.search('playlist');
+        let playlistIdPosition = youtube_link.search('playlist');
         playlistIdPosition += 14;
-        var playlistId = data.youtube_link.substr(playlistIdPosition, data.youtube_link.length - 1);
+        var playlistId = youtube_link.substr(playlistIdPosition, youtube_link.length - 1);
         ypi.playlistInfo(config.youtube_key, playlistId, function(playlistItem) {
           for(var i = 0; i < playlistItem.length; i++) {
             queue.push('https://www.youtube.com/watch?v=' + playlistItem[i].resourceId.videoId);
@@ -109,7 +100,7 @@ io.on('connection', function(socket) {
       if (queue.length === 1 || playlistPlayFirst === true) {
         playlistPlayFirst = false;
         try {
-          client.guilds.get('136182197051719680').members.get(data.userId).voiceChannel.join().then(function(connection) {
+          client.guilds.get('136182197051719680').members.get('136181701733777409').voiceChannel.join().then(function(connection) {
             let stream = youtubeStream(queue[0]);
             connection.playStream(stream);
 
