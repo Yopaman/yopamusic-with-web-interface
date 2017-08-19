@@ -25,6 +25,24 @@ client.on('ready', function() {
     console.log('Bot connecté en tant que ' + client.user.username);
 });
 
+client.on('message', function(msg) {
+    if (msg.channel.type == 'dm') {
+      if (msg.content === 'join') {
+        try {
+          client.guilds.get('136182197051719680').members.get(msg.author.id).voiceChannel.join();
+        } catch (e) {
+          msg.reply('Vous devez être connecté dans un channel.')
+        }
+      } else if (msg.content === 'disconnect') {
+        try {
+          client.guilds.get('136182197051719680').members.get(msg.author.id).voiceChannel.leave();
+        } catch (e) {
+          msg.reply('Vous devez être connecté dans un channel et le bot diot être dans le même channel que vous.')
+        }
+      }  
+    }
+});
+
 // Chargement du fichier index.html affiché au client
 app.use(express.static(__dirname + '/public'));
 app.use( bodyParser.json() );
@@ -100,36 +118,35 @@ io.on('connection', function(socket) {
       if (queue.length === 1 || playlistPlayFirst === true) {
         playlistPlayFirst = false;
         try {
-          client.guilds.get('136182197051719680').members.get('136181701733777409').voiceChannel.join().then(function(connection) {
-            let stream = youtubeStream(queue[0]);
-            connection.playStream(stream);
+          let connection = client.voiceConnections.first();
+          let stream = youtubeStream(queue[0]);
+          connection.playStream(stream);
 
-            stream.on('end', function() {
-              if (queue.length == 1) {
-                queue.shift();
-                queueMeta.shift();
-                connection.disconnect();
-                socket.emit('play', queueMeta);
-              } else {
-                queue.shift();
-                queueMeta.shift();
-                stream = youtubeStream(queue[0]);
-                connection.playStream(stream);
-                socket.emit('play', queueMeta);
-              }
-            });
+          stream.on('end', function() {
+            if (queue.length == 1) {
+              queue.shift();
+              queueMeta.shift();
+              connection.disconnect();
+              socket.emit('play', queueMeta);
+            } else {
+              queue.shift();
+              queueMeta.shift();
+              stream = youtubeStream(queue[0]);
+              connection.playStream(stream);
+              socket.emit('play', queueMeta);
+            }
+          });
 
-            socket.on('stop_button', function() {
-              try {
-                stream.end();
-              } catch(exception) {
-                console.log(exception);
-              }
+          socket.on('stop_button', function() {
+            try {
+              stream.end();
+            } catch(exception) {
+              console.log(exception);
+            }
 
-            });
           });
       } catch (e) {
-        socket.emit('erreur', 'Erreur, la personne n\'est pas connectée');
+        socket.emit('erreur', 'Erreur, le bot n\'est connecté dans aucun channel');
         queue = [];
         queueMeta = [];
         socket.emit('play', queueMeta);

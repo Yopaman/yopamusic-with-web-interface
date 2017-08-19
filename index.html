@@ -84,6 +84,7 @@
   socket.on('play', function(queueMeta) {
     var queueMetaLength = queueMeta.length;
     var queueDiv = document.getElementById('queue');
+    document.getElementById('erreur').innerHTML = '';
 
     while (queueDiv.firstChild) {
       queueDiv.removeChild(queueDiv.firstChild);
