@@ -11,7 +11,8 @@
     "socket.io": "^2.0.3",
     "youtube-audio-stream": "0.0.50",
     "youtube-info": "^1.1.1",
-    "youtube-playlist-info": "^0.1.0"
+    "youtube-playlist-info": "^0.1.0",
+    "ytdl-core": "^0.16.0"
   },
   "devDependencies": {},
   "scripts": {
