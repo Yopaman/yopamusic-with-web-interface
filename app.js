@@ -65,8 +65,11 @@ io.on('connection', function(socket) {
   socket.on('stop_button', function() {
     queue = [];
     queueMeta = [];
-    client.voiceConnections.first().disconnect();
     socket.emit('play', queueMeta);
+    try {
+      client.voiceConnections.first().disconnect();
+    } catch (e) {
+    }
   });
 
   socket.on('remove_button', function(data) {
@@ -80,35 +83,40 @@ io.on('connection', function(socket) {
     if (/(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?\/?.*(?:watch|embed)?(?:.*v=|v\/|\/)([\w\-_]+)\&?/.test(youtube_link)) {
 
       //Ajouter à la file d'attente
-      if(youtube_link.search('playlist') < 0) {
-        queue.push(youtube_link);
-        var videoId = youtube_link.split('v=')[1];
-        var ampersandPosition = videoId.indexOf('&');
-        if(ampersandPosition != -1) {
-          videoId = videoId.substring(0, ampersandPosition);
-        }
-        fetchVideoInfo(videoId)
-        .then(function(videoInfos) {
-          queueMeta.push({ title: videoInfos.title });
-          socket.emit('play', queueMeta);
-          addToQueue.emit('finished');
-        });
-      } else {
-        if (queue.length === 0) {
-          playlistPlayFirst = true;
-        }
-        let playlistIdPosition = youtube_link.search('playlist');
-        playlistIdPosition += 14;
-        var playlistId = youtube_link.substr(playlistIdPosition, youtube_link.length - 1);
-        ypi.playlistInfo(config.youtube_key, playlistId, function(playlistItem) {
-          for(var i = 0; i < playlistItem.length; i++) {
-            queue.push('https://www.youtube.com/watch?v=' + playlistItem[i].resourceId.videoId);
-            queueMeta.push({ title: playlistItem[i].title});
+      if (client.voiceConnections.first() != undefined) {
+        if(youtube_link.search('playlist') < 0) {
+          queue.push(youtube_link);
+          var videoId = youtube_link.split('v=')[1];
+          var ampersandPosition = videoId.indexOf('&');
+          if(ampersandPosition != -1) {
+            videoId = videoId.substring(0, ampersandPosition);
           }
-          socket.emit('play', queueMeta);
-          addToQueue.emit('finished');
-        });
+          fetchVideoInfo(videoId)
+          .then(function(videoInfos) {
+            queueMeta.push({ title: videoInfos.title });
+            socket.emit('play', queueMeta);
+            addToQueue.emit('finished');
+          });
+        } else {
+          if (queue.length === 0) {
+            playlistPlayFirst = true;
+          }
+          let playlistIdPosition = youtube_link.search('playlist');
+          playlistIdPosition += 14;
+          var playlistId = youtube_link.substr(playlistIdPosition, youtube_link.length - 1);
+          ypi.playlistInfo(config.youtube_key, playlistId, function(playlistItem) {
+            for(var i = 0; i < playlistItem.length; i++) {
+              queue.push('https://www.youtube.com/watch?v=' + playlistItem[i].resourceId.videoId);
+              queueMeta.push({ title: playlistItem[i].title});
+            }
+            socket.emit('play', queueMeta);
+            addToQueue.emit('finished');
+          });
+        }
+      } else {
+        socket.emit('erreur', "Erreur, le bot n'est pas connecté");
       }
+      
     } else {
       socket.emit('erreur', 'Erreur, vous devez entrer un lien youtube')
     }
