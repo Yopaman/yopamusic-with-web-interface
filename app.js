@@ -50,8 +50,13 @@ app.use(bodyParser.urlencoded({
   extended: true
 }));
 
-app.get('/', function(req, res,next) {
-    res.sendFile(__dirname + '/index.html');
+app.get('/', function(req, res, next) {
+    res.sendFile(__dirname + '/password.html');
+    app.post('/', function(req, res, next) {
+        if (req.body.password === config.password) {
+            res.sendFile(__dirname + '/index.html');
+        }
+    });
 });
 
 io.on('connection', function(socket) {
