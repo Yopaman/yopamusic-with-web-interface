@@ -8,7 +8,7 @@
     "discord.js": "^11.1.0",
     "express": "^4.15.3",
     "node-opus": "^0.2.6",
-    "socket.io": "^2.0.3",
+    "socket.io": "^2.4.0",
     "youtube-audio-stream": "0.0.50",
     "youtube-info": "^1.1.1",
     "youtube-playlist-info": "^0.1.0"
